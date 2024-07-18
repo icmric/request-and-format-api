@@ -1,28 +1,57 @@
 export default {
 	id: 'request-and-format-api',
 	handler: async ({ }, context) => {
+		//const { services, getSchema } = context;
+		const { ItemsService } = context.services;
+		//return context;
+
+		const itemx = new ItemsService('api_parents', {
+			schema: await context.getSchema(),
+			accountability: context.data.$accountability
+		});
+		let datax;
+		try {
+			datax = await itemx.readByQuery({fields:['*','api.*'], filter:{'title' : {'_eq': context.data.$trigger.data.query.tool}}});
+		} catch (e) {}
+		//return datax;
+		if (datax == "") {
+			return itemx.readByQuery({fields:['title']});
+		}
+		
+		
+		let apiRequest = datax[0].api;
+		let tool = datax[0];
+		
+
+		context.data.$url = context.data.$trigger.data.query;
+		context.data.$tool = {};
+		context.data.$tool.main = recursiveReplace(tool.main);
+
 		let apiData = {
 			"request": null,
 		};
-		if ((context.data.api_details[0].request == null || context.data.api_details[0].request == {}) == false) {
-			apiData.request = recursiveReplace(context.data.api_details[0].request);
+		if ((apiRequest.request == null || apiRequest.request == {}) == false) {
+			apiData.request = recursiveReplace(apiRequest.request);
 		}
 
 		// Makes API call and saves raw response
-		context.data.apiResponse = await performApiCall(context.data.api_details, apiData.request);
+		context.data.apiResponse = await performApiCall(apiRequest, apiData.request);
+		
+		
 		let apiResponceObj;
-		if (context.data.api_details[0].transform != null) {
+		if (apiRequest.transform != null) {
 			// Uses passes transform object to gather all data to return
-			apiResponceObj = await recursiveReplace(context.data.api_details[0].transform);
+			apiResponceObj = await recursiveReplace(apiRequest.transform);
 		} else {
 			// If no transform object is provided, the raw response is returned
 			apiResponceObj = context.data.apiResponse;
 		}
-		
+
 		return apiResponceObj;
 
 		// Attempts to find a value at the given path. If no value is found, returns the path.
 		function resolvePath(replacementVariablePath) {
+			replacementVariablePath = "data." + replacementVariablePath;
 			return replacementVariablePath.trim().split('.').reduce((prev, curr) => {
 				if (prev && typeof prev === 'object') {
 					return prev[curr];
@@ -30,7 +59,7 @@ export default {
 				return undefined;
 			}, context);
 		}
-		
+
 		// Uses a regex to find all placeholders and run resolvePath() with them
 		function replaceInValue(value) {
 			let regex = /{(.*)}/g;
@@ -38,7 +67,7 @@ export default {
 				let returnValue = resolvePath(p1);
 				let resolved;
 				if (typeof returnValue === "string") {
-					resolved = returnValue;	
+					resolved = returnValue;
 				} else {
 					// if the result is not a string, turn it into a string
 					resolved = JSON.stringify(returnValue);
@@ -78,7 +107,7 @@ export default {
 
 		async function performApiCall(apiCallDetails, apiCallBody) {
 			// Destructure the necessary details from apiCallDetails
-			const { method, url, header } = apiCallDetails[0];
+			const { method, url, header } = apiCallDetails;
 			const headers = {};
 
 			if (header != null) {
@@ -88,21 +117,15 @@ export default {
 				});
 			}
 			let apiResponse;
-
-			if (apiCallBody != null) {
-				// Execute the fetch request with the provided details and capture the response
-				apiResponse = await fetch(apiCallDetails[0].url, {
-					method: apiCallDetails[0].method,
-					headers: headers != null ? headers : null,
-					body: JSON.stringify(apiCallBody),
-				}).then(response => { return response.json() })
-			} else {
-				// Execute the fetch request with the provided details and capture the response
-				apiResponse = await fetch(apiCallDetails[0].url, {
-					method: apiCallDetails[0].method,
-					headers: headers != null ? headers : null,
-				}).then(response => { return response.json() })
+			let apiRequestInfo = {
+				method: apiCallDetails.method,
+				headers: headers != null ? headers : null
 			}
+			if (apiCallBody != null) {
+				apiRequestInfo.body = JSON.stringify(apiCallBody);
+			}
+			// Execute the fetch request with the provided details and capture the response
+			apiResponse = await fetch(apiCallDetails.url, apiRequestInfo).then(response => { return response.json() })
 			apiData.response = apiResponse;
 			return apiResponse;
 		}
