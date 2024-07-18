@@ -1,12 +1,13 @@
 export default {
 	id: 'request-and-format-api',
 	handler: async ({ }, context) => {
-		let apiData;
-		if (context.data.api_details[0].request != {} || context.data.api_details[0].method == "POST") {
-			apiData = {
-				"request": recursiveReplace(context.data.api_details[0].request),
-			}
+		let apiData = {
+			"request": null,
+		};
+		if ((context.data.api_details[0].request == null || context.data.api_details[0].request == {}) == false) {
+			apiData.request = recursiveReplace(context.data.api_details[0].request);
 		}
+
 		// Makes API call and saves raw response
 		context.data.apiResponse = await performApiCall(context.data.api_details, apiData.request);
 		let apiResponceObj;
