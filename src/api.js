@@ -2,7 +2,7 @@ export default {
 	id: 'request-and-format-api',
 	handler: async ({ }, context) => {
 		let apiData;
-		if (context.data.api_details[0].request != null) {
+		if (context.data.api_details[0].request != {} || context.data.api_details[0].method == "POST") {
 			apiData = {
 				"request": recursiveReplace(context.data.api_details[0].request),
 			}
@@ -81,13 +81,22 @@ export default {
 					headers[h.header_title] = h.header_content;
 				});
 			}
+			let apiResponse;
 
-			// Execute the fetch request with the provided details and capture the response
-			let apiResponse = await fetch(apiCallDetails[0].url, {
-				method: apiCallDetails[0].method,
-				headers: headers != null ? headers : null,
-				body: apiCallBody != null ? JSON.stringify(apiCallBody) : null,
-			}).then(response => { return response.json() })
+			if (apiCallBody != null) {
+				// Execute the fetch request with the provided details and capture the response
+				apiResponse = await fetch(apiCallDetails[0].url, {
+					method: apiCallDetails[0].method,
+					headers: headers != null ? headers : null,
+					body: JSON.stringify(apiCallBody),
+				}).then(response => { return response.json() })
+			} else {
+				// Execute the fetch request with the provided details and capture the response
+				apiResponse = await fetch(apiCallDetails[0].url, {
+					method: apiCallDetails[0].method,
+					headers: headers != null ? headers : null,
+				}).then(response => { return response.json() })
+			}
 			apiData.response = apiResponse;
 			return apiResponse;
 		}
