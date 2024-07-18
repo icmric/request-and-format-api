@@ -9,11 +9,16 @@ export default {
 		}
 		// Makes API call and saves raw response
 		context.data.apiResponse = await performApiCall(context.data.api_details, apiData.request);
-
-		// Uses passes transform object to gather all data to return
-		let apiResponseObj = await recursiveReplace(context.data.api_details[0].transform);
+		let apiResponceObj;
+		if (context.data.api_details[0].transform != null) {
+			// Uses passes transform object to gather all data to return
+			apiResponceObj = await recursiveReplace(context.data.api_details[0].transform);
+		} else {
+			// If no transform object is provided, the raw response is returned
+			apiResponceObj = context.data.apiResponse;
+		}
 		
-		return apiResponseObj;
+		return apiResponceObj;
 
 		// Attempts to find a value at the given path. If no value is found, returns the path.
 		function resolvePath(replacementVariablePath) {
