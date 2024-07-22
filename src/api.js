@@ -54,7 +54,7 @@ export default {
 			// Uses passes transform object to gather all data to return
 			apiResponceObj = await recursiveReplace(apiRequest.transform);
 		} else {
-			// If no transform object is provided, the raw response is returned
+			// If no transform object is provided, the raw api response is returned
 			apiResponceObj = context.data.apiResponse;
 		}
 
@@ -117,7 +117,7 @@ export default {
 		}
 
 		async function performApiCall(apiCallDetails, apiCallBody) {
-			// Destructure the necessary details from apiCallDetails
+			// get the necessary details from apiCallDetails
 			const { method, url, header } = apiCallDetails;
 			let headers = {};
 
