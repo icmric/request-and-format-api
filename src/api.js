@@ -5,6 +5,8 @@ export default {
 		const { ItemsService } = context.services;
 		//return context;
 
+		//TODO read in data from extra values
+
 		const itemx = new ItemsService('api_parents', {
 			schema: await context.getSchema(),
 			accountability: context.data.$accountability
@@ -17,7 +19,17 @@ export default {
 		if (datax == "") {
 			return itemx.readByQuery({fields:['title']});
 		}
+
 		
+		// Gets extra values from parent if present
+		let extraValues = {};
+		if (datax[0].extra_values != null) {
+			for (let i = 0; i < datax[0].extra_values.length; i++) {
+					let key = datax[0].extra_values[i].key;
+					let value = datax[0].extra_values[i].value;
+					extraValues[key] = value;
+			}
+		}
 		
 		let apiRequest = datax[0].api;
 		let tool = datax[0];
@@ -37,7 +49,6 @@ export default {
 		// Makes API call and saves raw response
 		context.data.apiResponse = await performApiCall(apiRequest, apiData.request);
 		
-		
 		let apiResponceObj;
 		if (apiRequest.transform != null) {
 			// Uses passes transform object to gather all data to return
@@ -56,7 +67,7 @@ export default {
 				if (prev && typeof prev === 'object') {
 					return prev[curr];
 				}
-				return undefined;
+				return "Blank";
 			}, context);
 		}
 
@@ -108,7 +119,7 @@ export default {
 		async function performApiCall(apiCallDetails, apiCallBody) {
 			// Destructure the necessary details from apiCallDetails
 			const { method, url, header } = apiCallDetails;
-			const headers = {};
+			let headers = {};
 
 			if (header != null) {
 				// Build headers object from the header array
@@ -116,6 +127,14 @@ export default {
 					headers[h.header_title] = h.header_content;
 				});
 			}
+
+			
+			// checks if extra values were passed, if so, uses them as headers
+			if (Object.keys(extraValues).length != 0) {
+				headers = extraValues;
+			}
+			
+
 			let apiResponse;
 			let apiRequestInfo = {
 				method: apiCallDetails.method,
